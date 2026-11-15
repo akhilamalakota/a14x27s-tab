@@ -30,6 +30,7 @@ function mutate(fn) {
   return p;
 }
 let lq = Promise.resolve();
+let eq = Promise.resolve();
 function log(type, data = {}) {
   lq = lq.then(async () => {
     const { log: arr = [] } = await local.get('log');
@@ -111,8 +112,26 @@ async function snap(reason) {
   try {
     await ensureOffscreen();
     const r = await chrome.runtime.sendMessage({ target: 'offscreen', type: 'snap' });
-    await log('selfie', { reason, img: r && r.img, err: r && r.err });
+    if (r && r.img) {
+      eq = eq.then(async () => {
+        const { pendingEvidence = [] } = await session.get('pendingEvidence');
+        pendingEvidence.unshift({ t: Date.now(), reason, img: r.img });
+        await session.set({ pendingEvidence: pendingEvidence.slice(0, 20) });
+      }).catch(() => {});
+      await eq;
+    } else await log('selfie', { reason, err: r && r.err });
   } catch (e) { await log('selfie', { reason, err: String(e) }); }
+}
+async function flushEvidence(pin) {
+  const { pendingEvidence = [] } = await session.get('pendingEvidence');
+  if (!pendingEvidence.length) return;
+  const { evidence = [] } = await local.get('evidence');
+  const encrypted = [];
+  for (const item of pendingEvidence) {
+    try { encrypted.push(await C.encryptJSON(item, pin)); } catch {}
+  }
+  await local.set({ evidence: encrypted.concat(evidence).slice(0, MAX_IMAGE_ENTRIES) });
+  await session.remove('pendingEvidence');
 }
 async function applySensors(s) {
   try {
@@ -215,7 +234,7 @@ async function checkPin(pin, totp) {
   }
   return fail(s);
 }
-async function applyUnlock(r, tabId, host) {
+async function applyUnlock(r, tabId, host, pin) {
   const s = await getSettings();
   if (r.kind === 'duress') {
     await mutate((st) => { st.browserLocked = true; st.duress = true; });
@@ -224,6 +243,7 @@ async function applyUnlock(r, tabId, host) {
     await refreshAll();
     return { ok: true, duress: true };
   }
+  await flushEvidence(pin);
   await mutate((st) => { st.browserLocked = false; st.duress = false; if (tabId != null) { delete st.tabs[tabId]; st.ruleOk[tabId] = host; } });
   await log('unlock');
   await refreshAll();
@@ -237,9 +257,9 @@ const H = {
   async init(m, sender) { return tabConfig(sender.tab.id, sender.tab.url || sender.url); },
   async unlock(m, sender) {
     const r = await checkPin(m.pin, m.totp);
-    return r.ok ? applyUnlock(r, sender.tab.id, hostOf(sender.tab.url)) : r;
+    return r.ok ? applyUnlock(r, sender.tab.id, hostOf(sender.tab.url), m.pin) : r;
   },
-  async unlockBrowser(m) { const r = await checkPin(m.pin, m.totp); return r.ok ? applyUnlock(r, null, '') : r; },
+  async unlockBrowser(m) { const r = await checkPin(m.pin, m.totp); return r.ok ? applyUnlock(r, null, '', m.pin) : r; },
   async focusPass(m, sender) {
     const host = hostOf(sender.tab.url);
     await mutate((st) => { st.focusPass[host] = Date.now() + 10 * 60 * 1000; });
@@ -358,7 +378,7 @@ const H = {
   async exportBackup(m) {
     const r = await checkPin(m.pin);
     if (!r.ok || r.kind !== 'real') return wrongPin(r);
-    const data = await local.get(['settings', 'profiles', 'activeProfile', 'vault', 'notes', 'log']);
+    const data = await local.get(['settings', 'profiles', 'activeProfile', 'vault', 'notes', 'log', 'evidence']);
     return { ok: true, blob: await C.encryptJSON({ version: 1, exportedAt: Date.now(), ...data }, m.pin) };
   },
   async importBackup(m) {
@@ -371,6 +391,7 @@ const H = {
     if (data.vault) next.vault = data.vault; else await local.remove('vault');
     if (data.notes) next.notes = data.notes; else await local.remove('notes');
     if (Array.isArray(data.log)) next.log = data.log.slice(0, MAX_LOG_ENTRIES);
+    if (Array.isArray(data.evidence)) next.evidence = data.evidence.slice(0, MAX_IMAGE_ENTRIES);
     await local.set(next);
     await boot(false);
     await refreshAll();
@@ -392,12 +413,17 @@ const H = {
       auth.duress = await C.hashPin(np);
     } else {
       if (np.length < 4) return { ok: false, error: 'At least 4 characters.' };
-      const { vault, notes } = await local.get(['vault', 'notes']);
+      const { vault, notes, evidence = [] } = await local.get(['vault', 'notes', 'evidence']);
       if (auth.pin) {
         try {
           if (vault) await local.set({ vault: await C.encryptJSON(await C.decryptJSON(vault, m.current), np) });
           if (notes) await local.set({ notes: await C.encryptJSON(await C.decryptJSON(notes, m.current), np) });
-        } catch { return { ok: false, error: 'Could not re-encrypt vault/notes.' }; }
+          if (evidence.length) {
+            const nextEvidence = [];
+            for (const item of evidence) nextEvidence.push(await C.encryptJSON(await C.decryptJSON(item, m.current), np));
+            await local.set({ evidence: nextEvidence });
+          }
+        } catch { return { ok: false, error: 'Could not re-encrypt vault, notes, or evidence.' }; }
       }
       auth.pin = await C.hashPin(np);
       if (auth.duress) { const d = await C.hashPin(np, auth.duress.salt); if (C.safeEq(d.hash, auth.duress.hash)) delete auth.duress; }
@@ -420,8 +446,26 @@ const H = {
     await local.set({ settings: { ...s, totpSecret: totpPending, totpOn: true } });
     return { ok: true };
   },
-  async getLog() { if (!(await optsOk())) return { ok: false }; return { ok: true, log: (await local.get('log')).log || [] }; },
-  async clearLog() { if (!(await optsOk())) return { ok: false }; await local.set({ log: [] }); return { ok: true }; },
+  async getLog(m) {
+    if (!(await optsOk())) return { ok: false };
+    const [{ log: entries = [] }, { evidence = [] }] = await Promise.all([local.get('log'), local.get('evidence')]);
+    const photos = [];
+    if (m.pin) {
+      for (const blob of evidence) {
+        try {
+          const item = await C.decryptJSON(blob, m.pin);
+          photos.push({ ...item, type: 'selfie' });
+        } catch { return { ok: false, error: 'Evidence could not be decrypted.' }; }
+      }
+    }
+    return { ok: true, log: entries.concat(photos).sort((a, b) => b.t - a.t) };
+  },
+  async clearLog() {
+    if (!(await optsOk())) return { ok: false };
+    await local.remove(['log', 'evidence']);
+    await session.remove('pendingEvidence');
+    return { ok: true };
+  },
 
   // ----- vault + notes -----
   async vaultSave(m) {

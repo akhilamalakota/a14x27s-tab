@@ -58,8 +58,8 @@ $('#hp1').onclick = () => send({ type: 'makeHoneypot', kind: 'bank' });
 $('#hp2').onclick = () => send({ type: 'makeHoneypot', kind: 'passwords' });
 
 async function loadLog() {
-  const r = await send({ type: 'getLog' });
-  if (!r.ok) return;
+  const r = await send({ type: 'getLog', pin: sessionPin });
+  if (!r.ok) { say('#backupMsg', r.error || 'Could not load the event log.', true); return; }
   const L = r.log, count = (t) => L.filter((x) => x.type === t).length;
   $('#stats').innerHTML = '';
   for (const [k, v] of [['Locks', count('lock')], ['Unlocks', count('unlock')], ['Wrong PINs', count('wrong_pin')], ['Selfies', L.filter((x) => x.type === 'selfie' && x.img).length], ['Honeypot hits', count('honeypot')], ['Tamper', count('tamper')]]) {
