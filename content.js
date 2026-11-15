@@ -18,16 +18,16 @@ html.a14-locked,html.a14-locked body{overflow:hidden!important}
 .a14-redact{filter:blur(6px)!important;cursor:pointer}.a14-redact.a14-show{filter:none!important}`;
   const ps = document.createElement('style'); ps.textContent = PAGECSS; document.documentElement.appendChild(ps);
 
-  const CSS = `*{box-sizing:border-box;font-family:system-ui,"Segoe UI",Roboto,Arial,sans-serif}
+  const CSS = `*{box-sizing:border-box;font-family:"Space Grotesk","Segoe UI",Arial,sans-serif}
 .layer{position:fixed;inset:0;pointer-events:auto;display:flex;align-items:center;justify-content:center}
-.layer[data-mode=pin],.layer[data-mode=focus]{background:#0a0e14}
-.modal{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.35)}
+.layer[data-mode=pin],.layer[data-mode=focus]{background:#f5f0e8;background-image:linear-gradient(rgba(0,0,0,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.05) 1px,transparent 1px);background-size:32px 32px}
+.modal{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(245,240,232,.72)}
 .layer[data-mode=pin] .modal,.layer[data-mode=focus] .modal{background:none}
-.card{width:340px;max-width:92vw;padding:26px;border:1px solid var(--ac);border-radius:14px;background:#0f151d;color:#d6e2f0;box-shadow:0 10px 50px rgba(0,0,0,.6);display:flex;flex-direction:column;gap:12px}
-.card h2{margin:0;font-size:20px;color:var(--ac);letter-spacing:.5px}.card p{margin:0;font-size:13px;line-height:1.5;opacity:.85}
-.card input,.card textarea{width:100%;padding:11px 12px;background:#0a0e14;border:1px solid #2a3544;border-radius:8px;color:#fff;font-size:15px;outline:none}
-.card input:focus,.card textarea:focus{border-color:var(--ac)}.card textarea{min-height:90px;resize:none}
-.card button,.notes button{padding:10px;border:0;border-radius:8px;background:var(--ac);color:#041016;font-weight:700;font-size:14px;cursor:pointer}
+.card{width:360px;max-width:92vw;padding:28px;border:3px solid #0a0a0a;border-radius:0;background:#fff;color:#0a0a0a;box-shadow:9px 9px 0 #0a0a0a;display:flex;flex-direction:column;gap:12px}
+.card h2{margin:0;font:800 22px/1.05 "Syne","Arial Black",sans-serif;color:#0a0a0a;letter-spacing:-.03em}.card p{margin:0;color:#6b6560;font-size:13px;line-height:1.5}
+.card input,.card textarea{width:100%;padding:11px 12px;background:#fffdf7;border:3px solid #0a0a0a;border-radius:0;color:#0a0a0a;font-size:15px;outline:none}
+.card input:focus,.card textarea:focus{border-color:#c084fc}.card textarea{min-height:90px;resize:none}
+.card button,.notes button{padding:10px;border:3px solid #0a0a0a;border-radius:0;background:#ffff00;color:#0a0a0a;box-shadow:4px 4px 0 #0a0a0a;font-weight:800;font-size:14px;cursor:pointer}
 .card button:disabled{opacity:.35;cursor:default}.msg{min-height:16px;color:#ff6b6b}
 .shake{animation:sh .35s}@keyframes sh{20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
 .scr{position:absolute;inset:0}
@@ -46,12 +46,12 @@ html.a14-locked,html.a14-locked body{overflow:hidden!important}
 .s-duress{background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px}
 .s-duress .logo{font-size:84px;font-weight:500;letter-spacing:-2px;font-family:Product Sans,Arial,sans-serif}
 .s-duress .q{width:min(560px,86vw);padding:14px 20px;border:1px solid #dfe1e5;border-radius:24px;font-size:16px;outline:none}
-.hud{position:fixed;left:10px;bottom:10px;padding:3px 8px;font:11px/1.4 ui-monospace,Consolas,monospace;color:var(--ac);background:rgba(5,10,15,.7);border:1px solid var(--ac);border-radius:4px;opacity:.55;pointer-events:none;letter-spacing:1px}
-.flash{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;font:700 28px ui-monospace,Consolas,monospace;color:var(--ac);letter-spacing:6px;animation:fl .9s forwards;background:rgba(0,0,0,.45)}
+.hud{position:fixed;left:10px;bottom:10px;padding:4px 8px;font:11px/1.4 "JetBrains Mono",Consolas,monospace;color:#0a0a0a;background:#ffff00;border:2px solid #0a0a0a;box-shadow:3px 3px 0 #0a0a0a;pointer-events:none;letter-spacing:1px}
+.flash{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;font:800 28px "JetBrains Mono",Consolas,monospace;color:#0a0a0a;letter-spacing:4px;animation:fl .9s forwards;background:rgba(255,255,0,.82)}
 @keyframes fl{0%{opacity:0}20%{opacity:1}80%{opacity:1}100%{opacity:0}}
-.notes{position:fixed;right:18px;bottom:18px;width:340px;max-width:92vw;padding:14px;border:1px solid var(--ac);border-radius:12px;background:#0f151d;color:#d6e2f0;pointer-events:auto;display:flex;flex-direction:column;gap:8px;box-shadow:0 10px 40px rgba(0,0,0,.6)}
-.notes .nh{display:flex;justify-content:space-between;color:var(--ac)}.notes .x{cursor:pointer}
-.notes input,.notes textarea{width:100%;padding:8px;background:#0a0e14;border:1px solid #2a3544;border-radius:6px;color:#fff;font-size:14px}.notes textarea{height:200px;resize:vertical}
+.notes{position:fixed;right:18px;bottom:18px;width:340px;max-width:92vw;padding:14px;border:3px solid #0a0a0a;background:#fff;color:#0a0a0a;pointer-events:auto;display:flex;flex-direction:column;gap:8px;box-shadow:7px 7px 0 #0a0a0a}
+.notes .nh{display:flex;justify-content:space-between;color:#0a0a0a;font-family:"Syne","Arial Black",sans-serif}.notes .x{cursor:pointer}
+.notes input,.notes textarea{width:100%;padding:8px;background:#fffdf7;border:3px solid #0a0a0a;border-radius:0;color:#0a0a0a;font-size:14px}.notes textarea{height:200px;resize:vertical}
 .notes .row{display:flex;gap:8px}.notes .row button{flex:1}`;
 
   const TPL = {

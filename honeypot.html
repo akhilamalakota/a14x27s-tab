@@ -1,7 +1,11 @@
 <!doctype html><html><head><meta charset="utf-8"><title>Loading…</title>
-<style>body{margin:0;font-family:Arial,sans-serif;background:#eef2f6;display:flex;align-items:center;justify-content:center;min-height:100vh}
-.c{background:#fff;padding:32px;border-radius:8px;width:360px;box-shadow:0 4px 20px rgba(0,0,0,.12)}h2{margin:0 0 6px;color:#0a3d62}p{color:#667;font-size:13px}
-input{width:100%;padding:11px;margin:8px 0;border:1px solid #cdd5de;border-radius:4px;font-size:14px}button{width:100%;padding:11px;border:0;border-radius:4px;background:#0a3d62;color:#fff;font-size:15px;cursor:pointer}
-.e{color:#c0392b;font-size:13px;min-height:18px}</style></head>
-<body><form class="c" id="f"><h2 id="h"></h2><p id="p"></p><input id="u" placeholder="User ID" autocomplete="off"><input id="w" type="password" placeholder="Password" autocomplete="off"><button>Sign in</button><div class="e" id="e"></div></form>
+<style>
+:root{--acc:#ffff00;--blk:#0a0a0a;--cream:#f5f0e8;--pink:#ffb3c6;--muted:#6b6560;--fh:"Syne","Arial Black",sans-serif;--fb:"Space Grotesk","Segoe UI",sans-serif;--fm:"JetBrains Mono",Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;color:var(--blk);font-family:var(--fb);background-color:var(--cream);background-image:linear-gradient(rgba(0,0,0,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.05) 1px,transparent 1px);background-size:32px 32px}
+.c{width:390px;max-width:calc(100vw - 32px);padding:30px;background:#fff;border:3px solid var(--blk);box-shadow:9px 9px 0 var(--blk)}
+.mark{display:inline-block;margin-bottom:22px;padding:5px 8px;background:var(--blk);color:#fff;font:700 11px var(--fm);letter-spacing:.08em}
+h2{margin:0 0 8px;font:800 25px/1.05 var(--fh);letter-spacing:-.03em}p{color:var(--muted);font-size:13px;line-height:1.55}
+input{width:100%;padding:12px;margin:7px 0;color:var(--blk);background:#fffdf7;border:3px solid var(--blk);border-radius:0;font-size:14px}button{width:100%;padding:12px;border:3px solid var(--blk);border-radius:0;background:var(--acc);color:var(--blk);box-shadow:4px 4px 0 var(--blk);font-weight:800;font-size:14px;cursor:pointer}.e{min-height:18px;margin-top:12px;color:#b42318;font:11px var(--fm)}
+</style></head>
+<body><form class="c" id="f"><span class="mark">A14X27S / SECURE ACCESS</span><h2 id="h"></h2><p id="p"></p><input id="u" placeholder="User ID" autocomplete="off"><input id="w" type="password" placeholder="Password" autocomplete="off"><button>Sign in</button><div class="e" id="e"></div></form>
 <script src="honeypot.js"></script></body></html>
