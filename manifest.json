@@ -22,6 +22,6 @@
     "hide-tab": { "suggested_key": { "default": "Alt+Shift+H" }, "description": "Hide (disguise) the current tab" },
     "open-panel": { "suggested_key": { "default": "Alt+Shift+O" }, "description": "Open the control panel (works in ghost mode)" }
   },
-  "permissions": ["tabs", "tabGroups", "storage", "unlimitedStorage", "idle", "alarms", "offscreen", "browsingData"],
+  "permissions": ["tabs", "tabGroups", "contextMenus", "storage", "unlimitedStorage", "idle", "alarms", "offscreen", "browsingData"],
   "host_permissions": ["<all_urls>"]
 }

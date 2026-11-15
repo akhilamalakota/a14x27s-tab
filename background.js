@@ -14,6 +14,8 @@ const DECOYS = [
   { t: 'My Drive - Google Drive', c: '#f4b400', l: 'D' },
   { t: 'Wikipedia, the free encyclopedia', c: '#555555', l: 'W' }
 ];
+const MAX_LOG_ENTRIES = 300;
+const MAX_IMAGE_ENTRIES = 50;
 const DEFSTATE = { browserLocked: false, duress: false, tabs: {}, hidden: {}, blur: {}, watched: {}, ruleOk: {}, focusPass: {}, lastActive: {}, fails: 0, lockoutUntil: 0 };
 const local = chrome.storage.local, session = chrome.storage.session;
 
@@ -31,8 +33,17 @@ let lq = Promise.resolve();
 function log(type, data = {}) {
   lq = lq.then(async () => {
     const { log: arr = [] } = await local.get('log');
-    arr.unshift({ t: Date.now(), type, ...data });
-    await local.set({ log: arr.slice(0, 300) });
+    const entry = { t: Date.now(), type, ...data };
+    arr.unshift(entry);
+    if (entry.img) {
+      let images = 0;
+      for (const item of arr) {
+        if (!item.img) continue;
+        images++;
+        if (images > MAX_IMAGE_ENTRIES) delete item.img;
+      }
+    }
+    await local.set({ log: arr.slice(0, MAX_LOG_ENTRIES) });
   }).catch(() => {});
   return lq;
 }
@@ -124,6 +135,16 @@ async function applyGhost(s) {
   } catch {}
 }
 
+// ---------- context menu ----------
+async function setupMenus() {
+  await chrome.contextMenus.removeAll();
+  chrome.contextMenus.create({ id: 'a14', title: 'a14x27s-tab', contexts: ['all'] });
+  chrome.contextMenus.create({ id: 'lock-tab', parentId: 'a14', title: 'Lock this tab', contexts: ['all'] });
+  chrome.contextMenus.create({ id: 'hide-tab', parentId: 'a14', title: 'Hide this tab', contexts: ['all'] });
+  chrome.contextMenus.create({ id: 'lock-group', parentId: 'a14', title: 'Lock this tab group', contexts: ['all'] });
+  chrome.contextMenus.create({ id: 'lock-browser', parentId: 'a14', title: 'Lock the browser', contexts: ['all'] });
+}
+
 // ---------- locking ----------
 async function lockBrowser(why = 'manual') {
   if (!(await hasPin())) return { ok: false, error: 'Set a PIN in Options first.' };
@@ -134,9 +155,11 @@ async function lockBrowser(why = 'manual') {
 }
 async function lockTabs(ids) {
   if (!(await hasPin())) return { ok: false, error: 'Set a PIN in Options first.' };
+  const valid = [...new Set((ids || []).filter((id) => Number.isInteger(id) && id >= 0))];
+  if (!valid.length) return { ok: false, error: 'No valid tab selected.' };
   const s = await getSettings();
-  await mutate((st) => { for (const id of ids) st.tabs[id] = s.lockStyle; });
-  await log('lock', { why: 'tab', n: ids.length });
+  await mutate((st) => { for (const id of valid) st.tabs[id] = s.lockStyle; });
+  await log('lock', { why: 'tab', n: valid.length });
   await refreshAll();
   return { ok: true };
 }
@@ -250,8 +273,17 @@ const H = {
   },
   async lockBrowser() { return lockBrowser('manual'); },
   async panic() { await log('panic'); return lockBrowser('panic'); },
-  async toggleBlur(m) { await mutate((st) => { st.blur[m.tabId] ? delete st.blur[m.tabId] : (st.blur[m.tabId] = true); }); await refreshAll(); return { ok: true }; },
-  async toggleWatch(m) { await mutate((st) => { st.watched[m.tabId] ? delete st.watched[m.tabId] : (st.watched[m.tabId] = true); }); return { ok: true }; },
+  async toggleBlur(m) {
+    if (!Number.isInteger(m.tabId) || m.tabId < 0) return { ok: false, error: 'No valid tab selected.' };
+    await mutate((st) => { st.blur[m.tabId] ? delete st.blur[m.tabId] : (st.blur[m.tabId] = true); });
+    await refreshAll();
+    return { ok: true };
+  },
+  async toggleWatch(m) {
+    if (!Number.isInteger(m.tabId) || m.tabId < 0) return { ok: false, error: 'No valid tab selected.' };
+    await mutate((st) => { st.watched[m.tabId] ? delete st.watched[m.tabId] : (st.watched[m.tabId] = true); });
+    return { ok: true };
+  },
   async hiddenList(m) {
     const r = await checkPin(m.pin);
     if (!r.ok || r.kind !== 'real') return wrongPin(r);
@@ -262,7 +294,7 @@ const H = {
     const r = await checkPin(m.pin);
     if (!r.ok || r.kind !== 'real') return wrongPin(r);
     await mutate((st) => { if (m.all) st.hidden = {}; else delete st.hidden[m.tabId]; });
-    if (m.tabId) { try { const t = await chrome.tabs.update(m.tabId, { active: true }); await chrome.windows.update(t.windowId, { focused: true }); } catch {} }
+    if (m.tabId != null) { try { const t = await chrome.tabs.update(m.tabId, { active: true }); await chrome.windows.update(t.windowId, { focused: true }); } catch {} }
     await refreshAll();
     return { ok: true };
   },
@@ -415,6 +447,12 @@ chrome.omnibox.onInputEntered.addListener((text) => {
   if (t === 'lock' || t === 'panic') return lockBrowser('omnibox');
   openPanel();
 });
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+  if (info.menuItemId === 'lock-tab') return lockTabs([tab && tab.id]);
+  if (info.menuItemId === 'hide-tab') return hideTabs([tab && tab.id]);
+  if (info.menuItemId === 'lock-group' && tab && tab.groupId >= 0) return lockTabs((await chrome.tabs.query({ groupId: tab.groupId })).map((t) => t.id));
+  if (info.menuItemId === 'lock-browser') return lockBrowser('context_menu');
+});
 chrome.idle.onStateChanged.addListener(async (state) => {
   if (state === 'active') return;
   const s = await getSettings();
@@ -482,7 +520,9 @@ async function boot(startup) {
 }
 chrome.runtime.onStartup.addListener(() => boot(true));
 chrome.runtime.onInstalled.addListener(async (d) => {
+  await setupMenus();
   await boot(false);
   if (d.reason === 'install') chrome.runtime.openOptionsPage();
 });
+setupMenus();
 boot(false);
