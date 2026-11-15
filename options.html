@@ -1,0 +1,74 @@
+<!doctype html><html><head><meta charset="utf-8"><title>a14x27s-tab options</title><link rel="stylesheet" href="ui.css"></head><body>
+<div id="gate" class="wrap" hidden style="max-width:360px;margin-top:12vh">
+  <section><h1>◈ a14x27s-tab</h1><p class="sm">Enter your PIN to open settings.</p>
+  <input id="gpin" type="password" placeholder="PIN" autocomplete="off"><input id="gtotp" inputmode="numeric" placeholder="Authenticator code" hidden style="margin-top:6px">
+  <button class="pri" id="gbtn" style="margin-top:10px;width:100%">Open</button><p id="gmsg" class="bad sm"></p></section>
+</div>
+<div id="app" class="wrap" hidden>
+<h1>◈ a14x27s-tab — Options</h1><p class="sm">Your browser, invisible to everyone but you. Settings are stored locally only.</p>
+
+<section><h2>PIN &amp; duress</h2>
+  <p class="sm" id="pinstate"></p>
+  <div class="two"><input id="curpin" type="password" placeholder="Current PIN (if changing)" autocomplete="off"><input id="newpin" type="password" placeholder="New PIN (4+ characters)" autocomplete="off"></div>
+  <div class="row"><button class="pri" id="setpin">Save PIN</button></div>
+  <div class="two" style="margin-top:12px"><input id="duress" type="password" placeholder="Duress PIN (empty = remove)" autocomplete="off"><button id="setduress">Save duress PIN</button></div>
+  <p class="sm">Duress PIN shows a fake Google homepage over every tab while your real tabs stay locked. Needs your current PIN above.</p>
+  <h2 style="margin-top:16px">Authenticator (TOTP)</h2>
+  <div class="row"><button id="totpnew">Set up</button><button id="totpoff" class="dng">Turn off</button></div>
+  <div id="totpbox" hidden><p class="sm">Add this key manually in your authenticator app (time-based):</p><code id="totpsec"></code>
+  <div class="row"><input id="totpcode" inputmode="numeric" placeholder="6-digit code" style="width:160px"><button id="totpok">Confirm</button></div></div>
+</section>
+
+<section><h2>Locking</h2>
+  <label class="f"><span>Lock screen style</span><select data-k="lockStyle"><option value="pin">PIN screen</option><option value="crash">Fake crash (Aw, Snap!)</option><option value="update">Fake update screen</option><option value="frozen">Fake frozen page</option><option value="virus">Fake virus scan</option><option value="invisible">Invisible lock</option></select></label>
+  <p class="sm">Disguised styles: reveal the PIN box by triple-clicking the top-left corner (90×90px) or typing the Konami code (↑↑↓↓←→←→ b a).</p>
+  <label class="f"><span>Auto-lock after idle (minutes, 0 = off)</span><input type="number" min="0" data-k="idleMinutes"></label>
+  <label class="f"><span>Lock browser on startup</span><input type="checkbox" data-k="lockOnStartup"></label>
+  <label class="f"><span>Blur every page (click to reveal)</span><input type="checkbox" data-k="blurAll"></label>
+  <label class="f"><span>Swap title/icon to a decoy while locked</span><input type="checkbox" data-k="hideOnLock"></label>
+  <label class="f"><span>Decoy identity</span><select data-k="decoyMode"><option value="rotate">Rotate by time of day</option><option value="0">Google Docs</option><option value="1">Google Classroom</option><option value="2">Gmail</option><option value="3">Google Drive</option><option value="4">Wikipedia</option></select></label>
+  <label class="f"><span>Only allow unlock between</span><input type="checkbox" data-k="windowOn"></label>
+  <div class="two"><input type="time" data-k="winStart"><input type="time" data-k="winEnd"></div>
+</section>
+
+<section><h2>Per-site rules &amp; focus</h2>
+  <p class="sm">One per line: <code>domain action</code> where action is <code>lock</code>, <code>blur</code> or <code>hide</code>.</p>
+  <textarea data-k="rules" placeholder="bank.example.com lock&#10;mail.example.com blur"></textarea>
+  <p class="sm" style="margin-top:10px">Focus mode sites (one domain per line) require typing a sentence to open for 10 minutes.</p>
+  <textarea data-k="focusSites" placeholder="reddit.com&#10;youtube.com"></textarea>
+</section>
+
+<section><h2>Stealth</h2>
+  <label class="f"><span>Ghost mode (invisible toolbar icon; open via <code>a14</code> + Enter in the address bar or Alt+Shift+O)</span><input type="checkbox" data-k="ghost"></label>
+  <label class="f"><span>Auto-redact emails, phones, card numbers, OTP codes</span><input type="checkbox" data-k="redact"></label>
+  <p class="sm">Omnibox: <code>a14</code> ⇥ <code>lock</code> locks everything. Shortcuts can be changed at chrome://extensions/shortcuts. Notes: Alt+Shift+N on any page.</p>
+</section>
+
+<section><h2>Traps &amp; defense</h2>
+  <label class="f"><span>Intruder selfie on wrong PIN / honeypot / tamper</span><input type="checkbox" data-k="selfie"></label>
+  <div class="row"><button id="camtest">Grant camera access</button><button id="mictest">Grant microphone access</button><span class="sm" id="permmsg"></span></div>
+  <label class="f"><span>Self-destruct after N wrong PINs (0 = off)</span><input type="number" min="0" data-k="maxAttempts"></label>
+  <label class="f"><span>…and wipe cookies, storage and cache</span><input type="checkbox" data-k="wipeOnDestruct"></label>
+  <label class="f"><span>Anomaly lock: lock if many tabs open quickly</span><input type="checkbox" data-k="anomalyOn"></label>
+  <label class="f"><span>…number of tabs within 5 seconds</span><input type="number" min="3" data-k="anomalyCount"></label>
+  <label class="f"><span>Clap-to-lock (double clap, uses microphone)</span><input type="checkbox" data-k="clap"></label>
+  <label class="f"><span>Clap sensitivity threshold (0.1 sensitive – 0.6 loud)</span><input type="number" step="0.05" min="0.05" max="0.9" data-k="clapThr"></label>
+  <label class="f"><span>Dead man's switch: wipe vault &amp; notes after N days with no unlock (0 = off)</span><input type="number" min="0" data-k="deadDays"></label>
+  <div class="row"><button id="hp1">Create bank honeypot tab</button><button id="hp2">Create passwords honeypot tab</button></div>
+</section>
+
+<section><h2>Appearance</h2>
+  <label class="f"><span>Cyberpunk HUD badge on pages</span><input type="checkbox" data-k="hud"></label>
+  <label class="f"><span>Theme colour</span><select data-k="theme"><option value="green">Neon green</option><option value="cyan">Cyan</option><option value="magenta">Magenta</option><option value="amber">Amber</option></select></label>
+  <label class="f"><span>Sound effects</span><input type="checkbox" data-k="sounds"></label>
+</section>
+
+<div class="row" style="position:sticky;bottom:10px"><button class="pri" id="save">Save settings</button><span id="smsg" class="sm"></span></div>
+
+<section><h2>Black box log</h2>
+  <div class="stats" id="stats"></div>
+  <div class="row"><button id="rlog">Refresh</button><button id="clog" class="dng">Clear log</button></div>
+  <table class="log"><thead><tr><th>Time</th><th>Event</th><th>Details</th></tr></thead><tbody id="rows"></tbody></table>
+</section>
+</div>
+<script src="options.js"></script></body></html>

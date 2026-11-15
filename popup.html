@@ -1,0 +1,38 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="ui.css"><title>a14x27s-tab</title></head>
+<body class="pop">
+<header><h1>◈ a14x27s-tab</h1><span class="sm" id="host"></span></header>
+
+<div id="nopin" class="box" hidden><p>No PIN yet. Set one to enable locking.</p><button class="pri" id="opt1">Open options</button></div>
+
+<div id="locked" class="box" hidden>
+  <h2>Browser locked</h2>
+  <input id="upin" type="password" placeholder="PIN" autocomplete="off">
+  <input id="utotp" inputmode="numeric" placeholder="Authenticator code" autocomplete="off" hidden style="margin-top:6px">
+  <button class="pri" id="unlock" style="margin-top:8px;width:100%">Unlock browser</button>
+</div>
+
+<div id="main" hidden>
+  <div id="chips"></div>
+  <div class="grid">
+    <button class="pri" id="lockTab">Lock tab</button><button id="hideTab">Hide tab</button>
+    <button id="blur">Blur tab</button><button id="watch">Auto-lock on leave</button>
+    <button id="lockBr">Lock browser</button><button class="dng" id="panic">PANIC</button>
+    <button id="lockGrp" hidden>Lock group</button><button id="hideGrp" hidden>Hide group</button>
+  </div>
+  <div class="box">
+    <h2>Time-bomb this tab</h2>
+    <div class="row"><input id="bmin" type="number" min="1" value="10" style="width:70px"><span class="sm">min →</span>
+      <select id="bact"><option value="lock">lock</option><option value="close">close</option></select><button id="bomb">Arm</button></div>
+  </div>
+  <div class="box">
+    <h2>PIN actions</h2>
+    <input id="pin" type="password" placeholder="PIN" autocomplete="off">
+    <div class="grid"><button id="vsave">Vault window tabs</button><button id="vrest">Restore vault</button>
+      <button id="hlist">Show hidden tabs</button><button id="hall">Restore all hidden</button></div>
+    <div id="hidden"></div>
+  </div>
+  <div class="box"><h2>Traps</h2><div class="grid"><button id="hp1">Bank honeypot tab</button><button id="hp2">Passwords honeypot tab</button></div></div>
+  <button id="opts" style="width:100%">Options</button>
+</div>
+<p id="note" class="sm"></p>
+<script src="popup.js"></script></body></html>
