@@ -2,7 +2,7 @@ import * as C from './crypto.js';
 
 const DEF = {
   lockStyle: 'pin', idleMinutes: 10, lockOnStartup: true, blurAll: false, hideOnLock: true, decoyMode: 'rotate',
-  windowOn: false, winStart: '08:00', winEnd: '22:00', rules: '', focusSites: '',
+  windowOn: false, winStart: '08:00', winEnd: '22:00', lockOnBlur: false, rules: '', focusSites: '',
   ghost: false, selfie: true, maxAttempts: 7, wipeOnDestruct: true, anomalyOn: false, anomalyCount: 8,
   clap: false, clapThr: 0.3, redact: false, deadDays: 0, hud: false, theme: 'green', sounds: true,
   totpOn: false, totpSecret: ''
@@ -331,6 +331,51 @@ const H = {
     await refreshAll();
     return { ok: true };
   },
+  async profileList() {
+    if (!(await optsOk())) return { ok: false, gated: true };
+    const { profiles = {}, activeProfile = '' } = await local.get(['profiles', 'activeProfile']);
+    return { ok: true, names: Object.keys(profiles).sort(), active: activeProfile };
+  },
+  async profileSave(m) {
+    if (!(await optsOk())) return { ok: false, error: 'Locked' };
+    const name = String(m.name || '').trim().slice(0, 40);
+    if (!name) return { ok: false, error: 'Profile name is required.' };
+    const profiles = ((await local.get('profiles')).profiles || {});
+    profiles[name] = await getSettings();
+    await local.set({ profiles, activeProfile: name });
+    return { ok: true, name };
+  },
+  async profileApply(m) {
+    if (!(await optsOk())) return { ok: false, error: 'Locked' };
+    const profiles = ((await local.get('profiles')).profiles || {});
+    const profile = profiles[String(m.name || '')];
+    if (!profile) return { ok: false, error: 'Profile not found.' };
+    await local.set({ settings: { ...DEF, ...profile }, activeProfile: String(m.name) });
+    await boot(false);
+    await refreshAll();
+    return { ok: true };
+  },
+  async exportBackup(m) {
+    const r = await checkPin(m.pin);
+    if (!r.ok || r.kind !== 'real') return wrongPin(r);
+    const data = await local.get(['settings', 'profiles', 'activeProfile', 'vault', 'notes', 'log']);
+    return { ok: true, blob: await C.encryptJSON({ version: 1, exportedAt: Date.now(), ...data }, m.pin) };
+  },
+  async importBackup(m) {
+    const r = await checkPin(m.pin);
+    if (!r.ok || r.kind !== 'real') return wrongPin(r);
+    let data;
+    try { data = await C.decryptJSON(m.blob, m.pin); } catch { return { ok: false, error: 'Backup cannot be decrypted.' }; }
+    if (!data || !data.settings || typeof data.settings !== 'object') return { ok: false, error: 'Invalid backup file.' };
+    const next = { settings: { ...DEF, ...data.settings }, profiles: data.profiles || {}, activeProfile: data.activeProfile || '' };
+    if (data.vault) next.vault = data.vault; else await local.remove('vault');
+    if (data.notes) next.notes = data.notes; else await local.remove('notes');
+    if (Array.isArray(data.log)) next.log = data.log.slice(0, MAX_LOG_ENTRIES);
+    await local.set(next);
+    await boot(false);
+    await refreshAll();
+    return { ok: true };
+  },
   async setPin(m) {
     const { auth = {} } = await local.get('auth');
     if (auth.pin) {
@@ -472,7 +517,11 @@ chrome.tabs.onActivated.addListener(async ({ tabId, windowId }) => {
   if (prev) { chrome.tabs.sendMessage(prev, { type: 'refresh' }).catch(() => {}); updateBadge(); }
 });
 chrome.windows.onFocusChanged.addListener(async (id) => {
-  if (id === chrome.windows.WINDOW_ID_NONE) return;
+  if (id === chrome.windows.WINDOW_ID_NONE) {
+    const s = await getSettings();
+    if (s.lockOnBlur && await hasPin()) await lockBrowser('focus_loss');
+    return;
+  }
   try { const w = await chrome.windows.get(id); if (w.type === 'normal') session.set({ lastWin: id }); } catch {}
 });
 chrome.tabs.onCreated.addListener(async () => {

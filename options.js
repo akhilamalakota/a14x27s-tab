@@ -2,6 +2,7 @@ const $ = (s) => document.querySelector(s);
 const send = (m) => chrome.runtime.sendMessage(m);
 const say = (id, t, bad) => { const e = $(id); e.textContent = t || ''; e.className = 'sm ' + (bad ? 'bad' : 'ok'); };
 const err = (r) => (r && (r.wait ? `Too many attempts. Wait ${r.wait}s.` : r.msg || r.error)) || 'Failed';
+let sessionPin = '';
 
 async function boot() {
   const r = await send({ type: 'getOptions' });
@@ -13,10 +14,11 @@ async function boot() {
   });
   $('#pinstate').textContent = r.hasPin ? `PIN is set.${r.hasDuress ? ' Duress PIN is set.' : ''}${r.hasVault ? ' Vault contains tabs.' : ''}` : 'No PIN set yet — set one now to enable locking.';
   loadLog();
+  loadProfiles();
 }
 $('#gbtn').onclick = async () => {
   const r = await send({ type: 'authCheck', pin: $('#gpin').value, totp: $('#gtotp').value });
-  if (r.ok) boot(); else $('#gmsg').textContent = err(r);
+  if (r.ok) { sessionPin = $('#gpin').value; boot(); } else $('#gmsg').textContent = err(r);
 };
 $('#gpin').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#gbtn').click(); });
 
@@ -75,6 +77,49 @@ async function loadLog() {
     tr.append(t, k, d); tb.append(tr);
   }
 }
+async function loadProfiles() {
+  const r = await send({ type: 'profileList' });
+  if (!r || !r.ok) return;
+  const select = $('#profileList');
+  select.innerHTML = '<option value="">Select a profile</option>';
+  r.names.forEach((name) => {
+    const option = document.createElement('option');
+    option.value = name; option.textContent = name;
+    if (name === r.active) option.selected = true;
+    select.append(option);
+  });
+}
 $('#rlog').onclick = loadLog;
 $('#clog').onclick = async () => { await send({ type: 'clearLog' }); loadLog(); };
+$('#profileSave').onclick = async () => {
+  const r = await send({ type: 'profileSave', name: $('#profileName').value });
+  if (r.ok) { $('#profileName').value = ''; say('#backupMsg', `Saved profile: ${r.name}`); loadProfiles(); } else say('#backupMsg', err(r), true);
+};
+$('#profileApply').onclick = async () => {
+  const name = $('#profileList').value;
+  if (!name) return say('#backupMsg', 'Choose a profile first.', true);
+  const r = await send({ type: 'profileApply', name });
+  say('#backupMsg', r.ok ? `Applied profile: ${name}` : err(r), !r.ok);
+  if (r.ok) boot();
+};
+$('#backupExport').onclick = async () => {
+  if (!sessionPin) return say('#backupMsg', 'Unlock settings first.', true);
+  const r = await send({ type: 'exportBackup', pin: sessionPin });
+  if (!r.ok) return say('#backupMsg', err(r), true);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(r.blob)], { type: 'application/json' }));
+  a.download = `a14x27s-backup-${new Date().toISOString().slice(0, 10)}.a14backup`;
+  a.click(); URL.revokeObjectURL(a.href);
+  say('#backupMsg', 'Encrypted backup exported.');
+};
+$('#backupFile').addEventListener('change', async () => {
+  const file = $('#backupFile').files[0];
+  if (!file || !sessionPin) return;
+  try {
+    const blob = JSON.parse(await file.text());
+    const r = await send({ type: 'importBackup', pin: sessionPin, blob });
+    say('#backupMsg', r.ok ? 'Encrypted backup restored.' : err(r), !r.ok);
+    if (r.ok) boot();
+  } catch (e) { say('#backupMsg', `Backup import failed: ${e.message}`, true); }
+});
 boot();

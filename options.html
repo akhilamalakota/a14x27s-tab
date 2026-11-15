@@ -24,6 +24,7 @@
   <p class="sm">Disguised styles: reveal the PIN box by triple-clicking the top-left corner (90×90px) or typing the Konami code (↑↑↓↓←→←→ b a).</p>
   <label class="f"><span>Auto-lock after idle (minutes, 0 = off)</span><input type="number" min="0" data-k="idleMinutes"></label>
   <label class="f"><span>Lock browser on startup</span><input type="checkbox" data-k="lockOnStartup"></label>
+  <label class="f"><span>Lock when Chrome loses focus</span><input type="checkbox" data-k="lockOnBlur"></label>
   <label class="f"><span>Blur every page (click to reveal)</span><input type="checkbox" data-k="blurAll"></label>
   <label class="f"><span>Swap title/icon to a decoy while locked</span><input type="checkbox" data-k="hideOnLock"></label>
   <label class="f"><span>Decoy identity</span><select data-k="decoyMode"><option value="rotate">Rotate by time of day</option><option value="0">Google Docs</option><option value="1">Google Classroom</option><option value="2">Gmail</option><option value="3">Google Drive</option><option value="4">Wikipedia</option></select></label>
@@ -61,6 +62,14 @@
   <label class="f"><span>Cyberpunk HUD badge on pages</span><input type="checkbox" data-k="hud"></label>
   <label class="f"><span>Theme colour</span><select data-k="theme"><option value="green">Neon green</option><option value="cyan">Cyan</option><option value="magenta">Magenta</option><option value="amber">Amber</option></select></label>
   <label class="f"><span>Sound effects</span><input type="checkbox" data-k="sounds"></label>
+</section>
+
+<section><h2>Profiles &amp; backup</h2>
+  <p class="sm">Save complete privacy settings as named profiles. Backups are encrypted with your PIN and never uploaded.</p>
+  <div class="row"><input id="profileName" placeholder="Profile name (Work, Travel, Guest)"><button id="profileSave">Save current</button></div>
+  <div class="row"><select id="profileList"><option value="">Select a profile</option></select><button id="profileApply">Apply</button></div>
+  <div class="row"><button id="backupExport" class="pri">Export encrypted backup</button><input id="backupFile" type="file" accept=".a14backup,.json"></div>
+  <p id="backupMsg" class="sm"></p>
 </section>
 
 <div class="row" style="position:sticky;bottom:10px"><button class="pri" id="save">Save settings</button><span id="smsg" class="sm"></span></div>
